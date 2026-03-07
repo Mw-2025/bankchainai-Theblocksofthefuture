@@ -1,0 +1,103 @@
+// --- Configuration ---
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- ENUMS for Institutional Integrity ---
+enum AccountType {
+  PRIMARY_CHECKING
+  SAVINGS_HYS
+  RETIREMENT_401K
+  RETIREMENT_ROTH_IRA
+  CRYPTO_WALLET
+  REAL_ESTATE_PORTFOLIO
+}
+
+enum TransactionStatus {
+  PENDING
+  ORACLE_REVIEW
+  VALIDATOR_ENFORCED
+  REJECTED
+  COMPLETED
+}
+
+// --- CORE MODELS ---
+model User {
+  id                String            @id @default(uuid())
+  email             String            @unique
+  didIdentifier     String?           @unique
+  kycStatus         String            @default("UNVERIFIED")
+  
+  kycProfile        KYCProfile?
+  accounts          BankAccount[]
+  
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@map("banking_users")
+}
+
+model BankAccount {
+  id                String      @id @default(uuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id])
+  
+  type              AccountType
+  accountNumber     String      @unique
+  
+  balanceFiat       Decimal     @default(0) @db.Decimal(20, 2)
+  balanceBankToken  Decimal     @default(0) @db.Decimal(20, 8)
+  
+  interestRate      Decimal?    @db.Decimal(5, 2)
+  isFrozen          Boolean     @default(false)
+  
+  metadata          Json?
+
+  transactions      TransactionLedger[]
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@map("bank_accounts")
+}
+
+model TransactionLedger {
+  id                String            @id @default(uuid())
+  accountId         String
+  account           BankAccount       @relation(fields: [accountId], references: [id])
+  
+  amount            Decimal           @db.Decimal(20, 8)
+  currency          String            @default("USD")
+  status            TransactionStatus @default(PENDING)
+  
+  blockchainHash    String?           @unique
+  oracleSignature   String?
+  validatorNodeId   String?
+  
+  referenceId       String?
+  note              String?
+
+  createdAt         DateTime          @default(now())
+
+  @@index([accountId])
+  @@index([blockchainHash])
+  @@map("banking_ledger")
+}
+
+model KYCProfile {
+  id                String    @id @default(uuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id])
+  
+  fullName          String
+  taxIdEncrypted    String
+  riskLevel         Int       @default(0)
+  lastVerified      DateTime?
+
+  @@map("banking_kyc")
+}
