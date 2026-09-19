@@ -1,0 +1,10 @@
+{
+  "name": "bankchainai-theblocksofthefuture",
+  "description": "BankChainAI — The Blocks of the Future. Native BKC chain, BKCX bank tokens, platform tracker.",
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "node": "bun chain/node.js",
+    "chain": "bun chain/node.js"
+  }
+}

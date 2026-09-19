@@ -72,12 +72,14 @@ model TransactionLedger {
   account           BankAccount       @relation(fields: [accountId], references: [id])
   
   amount            Decimal           @db.Decimal(20, 8)
-  currency          String            @default("USD")
+  currency          String            @default("USD") // USD | BKC | BKCX
   status            TransactionStatus @default(PENDING)
-  
+
   blockchainHash    String?           @unique
   oracleSignature   String?
   validatorNodeId   String?
+  chainSlot         Int?
+  chainCluster      String            @default("mainnet")
   
   referenceId       String?
   note              String?
@@ -100,4 +102,21 @@ model KYCProfile {
   lastVerified      DateTime?
 
   @@map("banking_kyc")
+}
+
+// BKC native chain + BKCX bank tokens, indexed from BankChainAI-TheBlocksofthefuture
+model ChainCheckpoint {
+  id              String   @id @default(uuid())
+  githubRepo      String   @default("bankchainai/BankchainAI-TheBlocksofthefuture")
+  cluster         String   @default("mainnet")
+  slot            Int
+  blockhash       String
+  genesisHash     String?
+  nativeSymbol    String   @default("BKC")
+  tokenSymbol     String   @default("BKCX")
+  transactionCount Int     @default(0)
+  indexedAt       DateTime @default(now())
+
+  @@index([slot])
+  @@map("bkc_chain_checkpoints")
 }
